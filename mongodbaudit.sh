@@ -3,6 +3,8 @@
 # Based on: https://github.com/stampery/mongoaudit
 # Author: Astra
 # Version: 2.0
+sudo apt install net-tools -y
+sudo apt install sendmail -y
 
 MONGO_CONF="/etc/mongod.conf"
 OUTPUT_FILE="mongodb_security_audit.txt"
