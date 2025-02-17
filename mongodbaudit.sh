@@ -41,6 +41,11 @@ check_mongo_running() {
     status_check "MongoDB is running." "MongoDB is NOT running!"
 }
 
+# Check MongoDB Installed Version 
+check_version() {
+mongo --version 
+}
+
 # Check MongoDB open ports
 check_open_ports() {
     netstat -tulnp | grep -q ":27017"
