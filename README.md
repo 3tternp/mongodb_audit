@@ -1,9 +1,7 @@
 # mongodb_audit
 
-## run script 
+chmod +x cis_mongo.sh
 
-chmod +x audit.sh
-
-sudo ./audit.sh
+sudo ./cis_mongo.sh
 
 
