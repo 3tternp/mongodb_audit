@@ -6,9 +6,9 @@
 
 MONGO_CONF="/etc/mongod.conf"
 OUTPUT_FILE="mongodb_security_audit.txt"
-SMTP_SERVER="smtp.example.com"
-EMAIL_TO="admin@example.com"
-EMAIL_FROM="audit@example.com"
+SMTP_SERVER="smtp.vairavtech.com"
+EMAIL_TO="prem@vairavtech.com"
+EMAIL_FROM="audit@vairavtech.com"
 
 # Function to send an email alert
 send_email() {
