@@ -3,18 +3,20 @@
 # Based on: https://github.com/stampery/mongoaudit
 # Author: Astra
 # Version: 2.0
+
 MONGO_CONF="/etc/mongod.conf"
 OUTPUT_FILE="mongodb_security_audit.txt"
 SMTP_SERVER="smtp.example.com"
 EMAIL_TO="admin@example.com"
 EMAIL_FROM="audit@example.com"
+
 # Function to send an email alert
 send_email() {
     local subject="MongoDB Security Audit Report - $(date)"
     local body=$(cat "$OUTPUT_FILE")
-    
+
     echo -e "Subject: $subject\n\n$body" | sendmail -S "$SMTP_SERVER" -f "$EMAIL_FROM" "$EMAIL_TO"
-    
+
     echo "[✔] Email sent to $EMAIL_TO"
 }
 
@@ -31,31 +33,33 @@ status_check() {
 
 # Interactive CLI Menu
 interactive_menu() {
-    echo "==================================="
-    echo "   MongoDB Security Audit Tool     "
-    echo "==================================="
-    echo "1. Run Full Security Audit"
-    echo "2. Check if MongoDB is Running"
-    echo "3. Check Authentication Settings"
-    echo "4. Check Open Ports"
-    echo "5. Check Anonymous Access"
-    echo "6. Check TLS/SSL Configuration"
-    echo "7. Send Email Report"
-    echo "8. Exit"
-    echo "==================================="
-    read -p "Choose an option (1-8): " choice
+    while true; do
+        echo "==================================="
+        echo "   MongoDB Security Audit Tool     "
+        echo "==================================="
+        echo "1. Run Full Security Audit"
+        echo "2. Check if MongoDB is Running"
+        echo "3. Check Authentication Settings"
+        echo "4. Check Open Ports"
+        echo "5. Check Anonymous Access"
+        echo "6. Check TLS/SSL Configuration"
+        echo "7. Send Email Report"
+        echo "8. Exit"
+        echo "==================================="
+        read -p "Choose an option (1-8): " choice
 
-    case $choice in
-        1) run_full_audit ;;
-        2) check_mongo_running ;;
-        3) check_authentication ;;
-        4) check_open_ports ;;
-        5) check_anonymous_access ;;
-        6) check_ssl ;;
-        7) send_email ;;
-        8) echo "Exiting..."; exit 0;;
-        *) echo "Invalid choice! Please select again."; interactive_menu;;
-    esac
+        case $choice in
+            1) run_full_audit ;;
+            2) check_mongo_running ;;
+            3) check_authentication ;;
+            4) check_open_ports ;;
+            5) check_anonymous_access ;;
+            6) check_ssl ;;
+            7) send_email ;;
+            8) echo "Exiting..."; exit 0 ;;
+            *) echo "Invalid choice! Please select again." ;;
+        esac
+    done
 }
 
 # Function to check if MongoDB is running
@@ -68,7 +72,7 @@ check_mongo_running() {
 # Function to check authentication settings
 check_authentication() {
     echo "Checking Authentication Settings..."
-    grep -q "authorization: enabled" $MONGO_CONF
+    grep -q "authorization: enabled" "$MONGO_CONF"
     status_check "Authentication is enabled." "Authentication is NOT enabled! Risk: Unauthorized access possible."
 }
 
@@ -89,7 +93,7 @@ check_anonymous_access() {
 # Function to check TLS/SSL configuration
 check_ssl() {
     echo "Checking for TLS/SSL Encryption..."
-    grep -q "ssl:" $MONGO_CONF
+    grep -q "ssl:" "$MONGO_CONF"
     status_check "TLS/SSL is enabled." "TLS/SSL is NOT enabled! Risk: Data may be transmitted unencrypted."
 }
 
