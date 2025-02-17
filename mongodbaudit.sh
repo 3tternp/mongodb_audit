@@ -42,9 +42,7 @@ check_mongo_running() {
 }
 
 # Check MongoDB Installed Version 
-check_version() {
 mongo --version 
-}
 
 # Check MongoDB open ports
 check_open_ports() {
