@@ -3,13 +3,11 @@
 # Based on: https://github.com/stampery/mongoaudit
 # Author: Astra
 # Version: 2.0
-
 MONGO_CONF="/etc/mongod.conf"
 OUTPUT_FILE="mongodb_security_audit.txt"
 SMTP_SERVER="smtp.example.com"
 EMAIL_TO="admin@example.com"
 EMAIL_FROM="audit@example.com"
-
 # Function to send an email alert
 send_email() {
     local subject="MongoDB Security Audit Report - $(date)"
