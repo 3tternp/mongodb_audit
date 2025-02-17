@@ -1,129 +1,137 @@
 #!/bin/bash
-# MongoDB Security Audit Tool (CIS Benchmark)
-# Author: Astra
-# Version: 3.0
-# Based on CIS MongoDB Benchmark
 
+# MongoDB Configuration File
 MONGO_CONF="/etc/mongod.conf"
 OUTPUT_FILE="mongodb_cis_audit.txt"
-SMTP_SERVER="smtp.example.com"
-EMAIL_TO="admin@example.com"
-EMAIL_FROM="audit@example.com"
 
-# Function to send an email alert
-send_email() {
-    local subject="MongoDB CIS Security Audit Report - $(date)"
-    local body=$(cat "$OUTPUT_FILE")
-    echo -e "Subject: $subject\n\n$body" | sendmail -S "$SMTP_SERVER" -f "$EMAIL_FROM" "$EMAIL_TO"
-    echo "[✔] Email sent to $EMAIL_TO"
-}
-
-# Function to check and log status
-status_check() {
-    if [[ $? -eq 0 ]]; then
-        echo "[✔] $1"
-        echo "[✔] $1" >> "$OUTPUT_FILE"
+# Function to check if MongoDB is installed
+check_mongo_installed() {
+    echo "🔹 Checking if MongoDB is installed..." | tee -a "$OUTPUT_FILE"
+    if ! command -v mongo &> /dev/null; then
+        echo "❌ MongoDB is NOT installed!" | tee -a "$OUTPUT_FILE"
+        exit 1
     else
-        echo "[✘] $2"
-        echo "[✘] $2" >> "$OUTPUT_FILE"
+        echo "✅ MongoDB is installed." | tee -a "$OUTPUT_FILE"
     fi
 }
 
-# Check MongoDB authentication settings
+# Function to check MongoDB version
+check_mongo_version() {
+    echo "🔹 Checking MongoDB Version..." | tee -a "$OUTPUT_FILE"
+   mongo --version
+    echo "✅ Installed MongoDB version: $installed_version" | tee -a "$OUTPUT_FILE"
+}
+
+# Function to check authentication configuration
 check_authentication() {
-    grep -q "authorization: enabled" $MONGO_CONF
-    status_check "Authentication is enabled." "Authentication is NOT enabled! Risk: Unauthorized access."
-}
-
-# Check MongoDB running status
-check_mongo_running() {
-    pgrep mongod > /dev/null
-    status_check "MongoDB is running." "MongoDB is NOT running!"
-}
-
-# Check MongoDB Installed Version 
-mongo --version 
-
-# Check MongoDB open ports
-check_open_ports() {
-    netstat -tulnp | grep -q ":27017"
-    status_check "MongoDB is running on port 27017." "MongoDB port 27017 is open! Consider restricting access."
-}
-
-# Check for anonymous access
-check_anonymous_access() {
-    mongo --quiet --eval "db.runCommand({connectionStatus: 1})" | grep -q "authInfo"
-    status_check "Anonymous access is restricted." "Anonymous access is ALLOWED! Risk: Unauthorized access possible."
-}
-
-# Check TLS/SSL encryption
-check_ssl() {
-    grep -q "ssl:" $MONGO_CONF
-    status_check "TLS/SSL is enabled." "TLS/SSL is NOT enabled! Risk: Data transmitted unencrypted."
-}
-
-# Check role-based access control (RBAC)
-check_rbac() {
-    mongo --quiet --eval "db.getRoles({showBuiltinRoles: true})" | grep -q "roles"
-    status_check "RBAC is configured." "RBAC is NOT configured! Risk: Weak access control."
-}
-
-# Full audit function
-run_full_audit() {
-    echo "===============================" > "$OUTPUT_FILE"
-    echo " MongoDB CIS Security Audit Report " >> "$OUTPUT_FILE"
-    echo " Generated on: $(date) " >> "$OUTPUT_FILE"
-    echo "===============================" >> "$OUTPUT_FILE"
-
-    check_mongo_running
-    check_authentication
-    check_open_ports
-    check_anonymous_access
-    check_ssl
-    check_rbac
-
-    echo "===============================" >> "$OUTPUT_FILE"
-    echo " Audit completed successfully. " >> "$OUTPUT_FILE"
-    echo "===============================" >> "$OUTPUT_FILE"
-
-    echo "Audit completed. Report saved to $OUTPUT_FILE."
-
-    read -p "Do you want to send the audit report via email? (y/n): " send_email_choice
-    if [[ "$send_email_choice" == "y" ]]; then
-        send_email
+    echo "🔹 Checking if authentication is enabled..." | tee -a "$OUTPUT_FILE"
+    if grep -q "authorization: enabled" "$MONGO_CONF"; then
+        echo "✅ Authentication is enabled." | tee -a "$OUTPUT_FILE"
+    else
+        echo "❌ Authentication is NOT enabled!" | tee -a "$OUTPUT_FILE"
     fi
 }
 
-# Interactive menu
-interactive_menu() {
-    echo "==============================="
-    echo "   MongoDB CIS Security Audit  "
-    echo "==============================="
-    echo "1. Run Full Security Audit"
-    echo "2. Check if MongoDB is Running"
-    echo "3. Check Authentication Settings"
-    echo "4. Check Open Ports"
-    echo "5. Check Anonymous Access"
-    echo "6. Check TLS/SSL Configuration"
-    echo "7. Check Role-Based Access Control"
-    echo "8. Send Email Report"
-    echo "9. Exit"
-    echo "==============================="
-    read -p "Choose an option (1-9): " choice
-
-    case $choice in
-        1) run_full_audit ;;
-        2) check_mongo_running ;;
-        3) check_authentication ;;
-        4) check_open_ports ;;
-        5) check_anonymous_access ;;
-        6) check_ssl ;;
-        7) check_rbac ;;
-        8) send_email ;;
-        9) echo "Exiting..."; exit 0;;
-        *) echo "Invalid choice! Please select again."; interactive_menu;;
-    esac
+# Function to check if MongoDB bypasses authentication
+check_localhost_bypass() {
+    echo "🔹 Checking localhost authentication bypass..." | tee -a "$OUTPUT_FILE"
+    if grep -q "enableLocalhostAuthBypass: false" "$MONGO_CONF"; then
+        echo "✅ Localhost authentication bypass is disabled." | tee -a "$OUTPUT_FILE"
+    else
+        echo "❌ Localhost authentication bypass is ENABLED!" | tee -a "$OUTPUT_FILE"
+    fi
 }
 
-# Run interactive menu
-interactive_menu
+# Function to check MongoDB running user
+check_mongo_user() {
+    echo "🔹 Checking if MongoDB is running under a non-root user..." | tee -a "$OUTPUT_FILE"
+    if pgrep -u mongodb mongod > /dev/null; then
+        echo "✅ MongoDB is running as a non-root user." | tee -a "$OUTPUT_FILE"
+    else
+        echo "❌ MongoDB is running as root! Please use a dedicated service account." | tee -a "$OUTPUT_FILE"
+    fi
+}
+
+# Function to check weak TLS protocols
+check_weak_tls() {
+    echo "🔹 Checking for weak TLS protocols..." | tee -a "$OUTPUT_FILE"
+    if grep -q "disabledProtocols: TLS1_0,TLS1_1" "$MONGO_CONF"; then
+        echo "✅ Weak TLS protocols are disabled." | tee -a "$OUTPUT_FILE"
+    else
+        echo "❌ Weak TLS protocols are ENABLED!" | tee -a "$OUTPUT_FILE"
+    fi
+}
+
+# Function to check TLS encryption
+check_tls_encryption() {
+    echo "🔹 Checking if TLS/SSL is enabled..." | tee -a "$OUTPUT_FILE"
+    if grep -q "mode: requireTLS" "$MONGO_CONF"; then
+        echo "✅ TLS encryption is enabled." | tee -a "$OUTPUT_FILE"
+    else
+        echo "❌ TLS encryption is NOT enabled!" | tee -a "$OUTPUT_FILE"
+    fi
+}
+
+# Function to check encryption at rest
+check_encryption_at_rest() {
+    echo "🔹 Checking encryption at rest..." | tee -a "$OUTPUT_FILE"
+    if grep -q "enableEncryption: true" "$MONGO_CONF"; then
+        echo "✅ Data encryption at rest is enabled." | tee -a "$OUTPUT_FILE"
+    else
+        echo "❌ Data encryption at rest is NOT enabled!" | tee -a "$OUTPUT_FILE"
+    fi
+}
+
+# Function to check audit logging
+check_audit_logging() {
+    echo "🔹 Checking if audit logging is enabled..." | tee -a "$OUTPUT_FILE"
+    if grep -q "auditLog:" "$MONGO_CONF"; then
+        echo "✅ Audit logging is enabled." | tee -a "$OUTPUT_FILE"
+    else
+        echo "❌ Audit logging is NOT enabled!" | tee -a "$OUTPUT_FILE"
+    fi
+}
+
+# Function to check if MongoDB is using a non-default port
+check_mongo_port() {
+    echo "🔹 Checking if MongoDB is using a non-default port..." | tee -a "$OUTPUT_FILE"
+    if grep -q "port: 27017" "$MONGO_CONF"; then
+        echo "❌ MongoDB is using the DEFAULT port (27017)! Change it for security." | tee -a "$OUTPUT_FILE"
+    else
+        echo "✅ MongoDB is using a custom port." | tee -a "$OUTPUT_FILE"
+    fi
+}
+
+# Function to check file permissions
+check_file_permissions() {
+    echo "🔹 Checking key file permissions..." | tee -a "$OUTPUT_FILE"
+    grep -E "keyFile|PEMKeyFile|CAFile" "$MONGO_CONF" | tee -a "$OUTPUT_FILE"
+}
+
+# Function to run all checks
+run_full_audit() {
+    echo "===================================" | tee "$OUTPUT_FILE"
+    echo " MongoDB CIS Benchmark Audit Report " | tee -a "$OUTPUT_FILE"
+    echo " Generated on: $(date) " | tee -a "$OUTPUT_FILE"
+    echo "===================================" | tee -a "$OUTPUT_FILE"
+
+    check_mongo_installed
+    check_mongo_version
+    check_authentication
+    check_localhost_bypass
+    check_mongo_user
+    check_weak_tls
+    check_tls_encryption
+    check_encryption_at_rest
+    check_audit_logging
+    check_mongo_port
+    check_file_permissions
+
+    echo "===================================" | tee -a "$OUTPUT_FILE"
+    echo " ✅ Audit Completed. Check $OUTPUT_FILE for full details. " | tee -a "$OUTPUT_FILE"
+    echo "===================================" | tee -a "$OUTPUT_FILE"
+}
+
+# Run the full audit
+run_full_audit
+
