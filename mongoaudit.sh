@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MongoDB Audit Tool
-# Author: [Your Name]
+# Author: Astra
 # Description: This script audits a MongoDB instance for security and configuration issues.
 
 MONGO_CONF="/etc/mongod.conf"
