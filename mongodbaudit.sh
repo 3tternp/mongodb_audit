@@ -1,8 +1,7 @@
 #!/bin/bash
-
 # MongoDB Security Audit Tool (Interactive CLI + Email Alerts)
 # Based on: https://github.com/stampery/mongoaudit
-# Author: [Your Name]
+# Author: Astra
 # Version: 2.0
 
 MONGO_CONF="/etc/mongod.conf"
@@ -56,8 +55,8 @@ interactive_menu() {
         5) check_anonymous_access ;;
         6) check_ssl ;;
         7) send_email ;;
-        8) echo "Exiting..."; exit 0 ;;
-        *) echo "Invalid choice! Please select again."; interactive_menu ;;
+        8) echo "Exiting..."; exit 0;;
+        *) echo "Invalid choice! Please select again."; interactive_menu;;
     esac
 }
 
